@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#bfe6ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Maju's Games</title>
+<meta name="description" content="Jogos educativos e divertidos para crianças: memória, jogo da velha, pintura e escovar os dentes. Sem login, é só jogar!">
+<meta name="apple-mobile-web-app-title" content="Maju's Games">
+<meta name="application-name" content="Maju's Games">
+<meta property="og:site_name" content="Maju's Games">
+<meta property="og:title" content="Maju's Games">
+<meta property="og:description" content="Jogos educativos e divertidos para crianças. Sem login, é só jogar!">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="assets/animais/gato.svg">
+<style>
+:root{--sky:#bfe6ff;--sun:#ffd23f;--coral:#ff6b5b;--grass:#3dbb6d;--ink:#1d2b53;--paper:#fffdf6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:linear-gradient(var(--sky),#e9f7ff);color:var(--ink);font-family:"Fredoka","Baloo 2","Trebuchet MS",system-ui,sans-serif;overflow-x:hidden;user-select:none;touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:none}
+button:focus-visible{outline:5px solid var(--ink);outline-offset:4px}
+#app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom))}
+.bar{display:flex;justify-content:space-between;align-items:center;min-height:72px}
+.round{width:68px;height:68px;border-radius:50%;background:var(--paper);font-size:34px;box-shadow:0 5px 0 rgba(29,43,83,.25);display:grid;place-items:center}
+.round:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(29,43,83,.25)}
+.round.off{opacity:.45}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding-bottom:20px}
+
+/* Início */
+.logo{font-size:clamp(34px,7vw,56px);font-weight:700;letter-spacing:.01em;text-align:center}
+.tiles{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.tile{width:min(42vw,240px);aspect-ratio:1;border-radius:36px;background:var(--paper);box-shadow:0 10px 0 rgba(29,43,83,.22);display:grid;place-items:center;font-size:clamp(56px,13vw,110px);position:relative;animation:bob 2.4s ease-in-out infinite}
+.tile:active{transform:translateY(8px);box-shadow:0 2px 0 rgba(29,43,83,.22);animation:none}
+.tile.sm{font-size:clamp(34px,8vw,64px)}
+.tile small{position:absolute;bottom:10px;font-size:34px;letter-spacing:6px}
+@keyframes bob{50%{transform:translateY(-8px)}}
+
+/* Escolha de nível */
+.levels{display:flex;flex-wrap:wrap;gap:20px;justify-content:center}
+.level{min-width:min(26vw,150px);padding:20px 14px;border-radius:30px;box-shadow:0 8px 0 rgba(29,43,83,.22);font-size:clamp(28px,6vw,40px);line-height:1.2;text-align:center;color:var(--ink)}
+.level:active{transform:translateY(6px);box-shadow:0 2px 0 rgba(29,43,83,.22)}
+.level span{display:block;font-size:46px}
+.l1{background:var(--sun)}.l2{background:#ffa94d}.l3{background:var(--coral)}
+
+/* Tabuleiro */
+.board{display:grid;gap:clamp(8px,2vw,16px);width:min(94vw,calc((100vh - 170px) * var(--ratio)),760px);width:min(94vw,calc((100dvh - 170px) * var(--ratio)),760px)}
+.card{aspect-ratio:1;perspective:700px;border-radius:22px}
+.inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.card.up .inner,.card.done .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:22px;backface-visibility:hidden;display:grid;place-items:center;box-shadow:0 6px 0 rgba(29,43,83,.25)}
+.back{background:var(--coral);font-size:clamp(28px,8vw,56px);color:#fff}
+.front{background:var(--paper);transform:rotateY(180deg);font-size:clamp(40px,11vw,88px)}
+.card.done .front{background:#d9f7e3;box-shadow:0 6px 0 var(--grass)}
+.card.done{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.12)}}
+
+/* Vitória */
+.win{position:fixed;inset:0;background:rgba(191,230,255,.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:10}
+.win.show{display:flex}
+.trophy{font-size:clamp(110px,28vw,200px);animation:bob 1.2s ease-in-out infinite}
+.row{display:flex;gap:28px}
+.big{width:110px;height:110px;font-size:56px}
+.bit{position:fixed;top:-60px;font-size:36px;pointer-events:none;z-index:11;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+
+/* Jogo da velha */
+.turn{font-size:clamp(46px,12vw,70px);background:var(--paper);border-radius:999px;padding:4px 30px;box-shadow:0 6px 0 rgba(29,43,83,.22);animation:bob 1.6s ease-in-out infinite}
+.velha{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,2.5vw,16px);width:min(92vw,calc(100vh - 250px),520px);width:min(92vw,calc(100dvh - 250px),520px);aspect-ratio:1}
+.cell{border-radius:24px;background:var(--paper);box-shadow:0 6px 0 rgba(29,43,83,.25);font-size:clamp(46px,17vw,110px);display:grid;place-items:center;line-height:1}
+.cell:active:not(.full){transform:translateY(4px);box-shadow:0 2px 0 rgba(29,43,83,.25)}
+.cell.full{animation:pop .4s}
+.cell.hit{background:#d9f7e3;box-shadow:0 6px 0 var(--grass);animation:pop .6s}
+
+/* Pintura */
+:root{--s:44px}
+@media (min-width:700px){:root{--s:54px}}
+.pintura{width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;touch-action:none;--cols:7}
+.paleta{display:grid;grid-template-columns:repeat(var(--cols),var(--s));gap:8px;justify-content:center}
+.sw{width:var(--s);height:var(--s);border-radius:50%;background:var(--c,var(--paper));border:4px solid var(--paper);box-shadow:0 3px 0 rgba(29,43,83,.3);font-size:calc(var(--s) * .5);display:grid;place-items:center;line-height:1}
+.sw.on{outline:4px solid var(--ink);outline-offset:2px;transform:scale(1.12)}
+.sw i{display:block;border-radius:50%;background:var(--ink)}
+.folha{display:block;background:#fff;border-radius:18px;box-shadow:0 8px 0 rgba(29,43,83,.22);aspect-ratio:1;cursor:none;touch-action:none;width:min(94vw,calc(100vh - 270px),640px);width:min(94vw,calc(100dvh - 270px),640px)}
+.brush{position:fixed;left:0;top:0;pointer-events:none;z-index:5;will-change:transform}
+.brush .dot{position:absolute;left:-12px;top:-12px;width:24px;height:24px;border-radius:50%;border:4px solid var(--ink);background:var(--c,#e63946)}
+.brush .em{position:absolute;left:-4px;top:-52px;font-size:52px;line-height:1;filter:drop-shadow(0 3px 0 rgba(29,43,83,.25))}
+@media (orientation:landscape){
+  .pintura{flex-direction:row;gap:24px;--cols:4}
+  .folha{width:min(calc(100vh - 40px),calc(100vw - 4 * var(--s) - 100px),640px);width:min(calc(100dvh - 40px),calc(100vw - 4 * var(--s) - 100px),640px)}
+}
+
+/* Escovar os dentes */
+.dentes{width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;touch-action:none}
+.ferr{display:flex;gap:22px}
+.ferr .round{width:76px;height:76px;font-size:42px}
+.ferr .round.on{outline:5px solid var(--ink);outline-offset:3px;background:var(--sun)}
+.ferr .round.dica{animation:bob .6s ease-in-out infinite}
+.boca{display:block;touch-action:none;cursor:none;width:min(96vw,calc((100vh - 300px) * 1.765),720px);width:min(96vw,calc((100dvh - 300px) * 1.765),720px);height:auto}
+.prog{display:flex;align-items:center;gap:12px;width:min(80vw,420px)}
+.prog b{flex:1;height:22px;border-radius:99px;background:var(--paper);box-shadow:inset 0 3px 0 rgba(29,43,83,.15);overflow:hidden}
+.prog b i{display:block;height:100%;width:0;background:var(--grass);border-radius:99px;transition:width .3s}
+.prog span{font-size:40px;line-height:1}
+.ponta{position:fixed;left:0;top:0;width:64px;height:64px;display:grid;place-items:center;font-size:52px;pointer-events:none;z-index:5;filter:drop-shadow(0 3px 0 rgba(29,43,83,.25))}
+.food{transition:opacity .15s}
+.food.no{animation:shk .3s}
+@keyframes shk{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.spark{animation:up .9s forwards;font-size:30px}
+@keyframes up{to{transform:translateY(-40px);opacity:0}}
+.brilho{animation:up 1.4s forwards;font-size:54px}
+@media (orientation:landscape){
+  .dentes{flex-direction:row;gap:28px}
+  .ferr{flex-direction:column}
+  .boca{width:min(calc(100vw - 260px),calc((100vh - 130px) * 1.765),720px);width:min(calc(100vw - 260px),calc((100dvh - 130px) * 1.765),720px)}
+}
+
+/* Celulares */
+@media (max-width:480px){
+  .round{width:58px;height:58px;font-size:28px}
+  .bar{min-height:62px}
+  main{gap:16px}
+  .tiles{gap:14px}
+  .levels{gap:14px}
+  .level{min-width:28vw;padding:16px 8px;border-radius:24px}
+  .level span{font-size:40px}
+  .card,.face{border-radius:16px}
+  .big{width:96px;height:96px;font-size:48px}
+}
+/* Celular deitado */
+@media (orientation:landscape) and (max-height:520px){
+  #app{padding-top:max(6px,env(safe-area-inset-top));padding-bottom:max(6px,env(safe-area-inset-bottom));padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .bar{min-height:52px;position:absolute;left:14px;right:14px;top:max(6px,env(safe-area-inset-top));pointer-events:none}
+  .bar .round{pointer-events:auto;width:50px;height:50px;font-size:24px}
+  main{flex-direction:row;flex-wrap:wrap;gap:14px;padding:0}
+  .logo{display:none}
+  .tile{width:min(44vh,200px)}
+  .level{min-width:0;padding:10px 18px}
+  .level span{font-size:34px}
+  .board{width:min(80vw,calc((100vh - 24px) * var(--ratio)),760px);width:min(80vw,calc((100dvh - 24px) * var(--ratio)),760px)}
+  .velha{width:min(60vw,calc(100vh - 120px),420px);width:min(60vw,calc(100dvh - 120px),420px)}
+  .turn{font-size:44px;padding:2px 22px}
+  .trophy{font-size:100px}
+  .win{flex-direction:row;gap:36px}
+  .big{width:84px;height:84px;font-size:42px}
+}
+
+
+/* Maju's Games: marca, rodapé e modal PIX */
+.logo{font-size:clamp(36px,9.5vw,64px);font-weight:700;letter-spacing:.01em;text-align:center;text-shadow:0 3px 0 rgba(255,255,255,.95),0 6px 0 rgba(29,43,83,.14)}
+.logo .b{font-size:.8em}
+.front img,.cell img{width:76%;height:76%;object-fit:contain;pointer-events:none;-webkit-user-drag:none}
+.turn img{width:1em;height:1em;display:block}
+.tile .im{display:flex;justify-content:center;gap:2%;width:84%}
+.tile .im img{width:46%;height:auto;pointer-events:none}
+.rodape{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0 14px;padding:6px 8px 2px;font-size:15px;color:rgba(29,43,83,.82)}
+.rodape a,.rodape .apoio,.rodape .autor{padding:10px 4px;font-weight:600;color:inherit}
+.rodape a,.rodape .apoio{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
+.rodape a:hover,.rodape .apoio:hover{color:var(--coral)}
+.rodape small{flex-basis:100%;text-align:center;font-size:12px;margin-top:-4px}
+.modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));background:rgba(29,43,83,.58)}
+.modal[hidden]{display:none}
+.m-card{position:relative;width:min(100%,440px);max-height:100%;overflow-y:auto;background:var(--paper);border-radius:32px;padding:26px 22px 22px;box-shadow:0 10px 0 rgba(29,43,83,.25);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;animation:pop .35s}
+.m-x{position:absolute;top:10px;right:10px;width:48px;height:48px;font-size:22px;background:#fff}
+.m-card h2{margin:0 44px 0 0;font-size:clamp(22px,5.6vw,28px);line-height:1.15;align-self:stretch}
+.m-card p{margin:0;font-size:16px;line-height:1.35}
+.m-top,.m-bot{display:flex;flex-direction:column;align-items:center;gap:10px;align-self:stretch}
+.m-qr{background:#fff;border-radius:22px;padding:8px;box-shadow:0 0 0 4px var(--sun);line-height:0}
+.m-qr img{width:min(64vw,260px,36dvh);height:auto;aspect-ratio:1;display:block;image-rendering:pixelated}
+.m-key{font:600 13px/1.3 ui-monospace,Menlo,Consolas,monospace;background:#fff;border-radius:12px;padding:8px 10px;word-break:break-all;user-select:all;-webkit-user-select:all}
+.copiar{min-height:54px;padding:12px 26px;border-radius:99px;background:var(--grass);color:#fff;font-size:19px;font-weight:700;box-shadow:0 5px 0 rgba(29,43,83,.25);transition:background .2s}
+.copiar:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(29,43,83,.25)}
+.copiar.ok{background:#1f8a4c}
+.m-ok{min-height:22px;font-size:15px;font-weight:600;color:#1f8a4c}
+@media (orientation:landscape) and (max-height:560px){
+  .logo{display:block;font-size:34px}
+  .m-card{width:min(100%,760px);display:grid;grid-template-columns:auto 1fr;column-gap:22px;align-items:center;text-align:left;padding:18px 20px}
+  .m-card h2{margin:0 52px 0 0}
+  .m-qr{grid-row:1/span 2;grid-column:1}
+  .m-qr img{width:min(60dvh,230px)}
+  .m-top,.m-bot{grid-column:2;align-items:flex-start}
+  .rodape{padding:2px 8px}
+  .rodape a,.rodape .apoio,.rodape .autor{padding:4px}
+}
+@media (prefers-reduced-motion:reduce){.tile,.trophy,.turn{animation:none}.inner{transition:none}.bit{display:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="m-tit">
+  <div class="m-card">
+    <button class="round m-x" id="m-x" aria-label="Fechar">✖️</button>
+    <div class="m-top">
+      <h2 id="m-tit">Gostou dos jogos? Me pague um café! ☕</h2>
+      <p>Sua contribuição ajuda a manter e melhorar o Maju's Games. Obrigado de coração! 💛</p>
+    </div>
+    <div class="m-qr"><img src="assets/qr-pix.svg" width="260" height="260" alt="QR Code PIX para contribuir com o Maju's Games"></div>
+    <div class="m-bot">
+      <p>Aponte a câmera do app do seu banco ou copie a chave PIX:</p>
+      <code class="m-key" id="m-chave"></code>
+      <button class="copiar" id="m-copiar">Copiar chave PIX</button>
+      <div class="m-ok" id="m-ok" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+<div class="win" id="win" aria-live="polite">
+  <div class="trophy" id="trophy">🏆</div>
+  <div class="row">
+    <button class="round big" id="again" aria-label="Jogar de novo">🔄</button>
+    <button class="round big" id="toHome" aria-label="Voltar ao início">🏠</button>
+  </div>
+</div>
+
+<script>
+/* ---------- Constantes do site ---------- */
+const PIX_KEY = "3be7b45c-98f7-4d34-b26e-f852ec1cd418";
+const PORTFOLIO_URL = ""; // coloque aqui a URL do seu portfólio: o link "Criado por Rubens Victor" é ativado sozinho
+const IMG = n => `<img src="assets/animais/${n}.svg" alt="" draggable="false">`;
+
+/* ---------- Som e voz (tudo opcional, sem arquivos externos) ---------- */
+let soundOn = true, actx;
+function tone(freqs, dur = .14, type = "sine") {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    freqs.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * dur;
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(.25, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
+    });
+  } catch (e) {}
+}
+function say(text) {
+  if (!soundOn || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "pt-BR"; u.rate = .9; u.pitch = 1.2;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function confetti() {
+  const set = ["🎉","⭐","🎈","✨","🌟","🎊"];
+  for (let i = 0; i < 40; i++) {
+    const b = document.createElement("div");
+    b.className = "bit"; b.textContent = set[i % set.length];
+    b.style.left = Math.random() * 100 + "vw";
+    b.style.animationDuration = 2 + Math.random() * 2 + "s";
+    b.style.animationDelay = Math.random() * .8 + "s";
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 5000);
+  }
+}
+
+/* ---------- Jogo da memória ---------- */
+const ANIMAIS = [ // [arquivo em assets/animais, nome falado]
+  ["cachorro","cachorro"],["gato","gato"],["sapo","sapo"],["macaco","macaco"],["leao","leão"],
+  ["porquinho","porquinho"],["coelho","coelho"],["panda","panda"],["elefante","elefante"],["tartaruga","tartaruga"]
+];
+const memoria = {
+  icon: "🃏",
+  niveis: [
+    { cls: "l1", icone: "🐣", pares: 3, cols: 3 },
+    { cls: "l2", icone: "🐥", pares: 6, cols: 4 },
+    { cls: "l3", icone: "🦖", pares: 8, cols: 4 }
+  ],
+  start(root, nivel, onWin) {
+    const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+    const escolhidos = shuffle(ANIMAIS).slice(0, nivel.pares);
+    const cartas = shuffle([...escolhidos, ...escolhidos]);
+    const rows = Math.ceil(cartas.length / nivel.cols);
+    const board = document.createElement("div");
+    board.className = "board";
+    board.style.gridTemplateColumns = `repeat(${nivel.cols}, 1fr)`;
+    board.style.setProperty("--ratio", nivel.cols / rows);
+    root.appendChild(board);
+
+    let abertas = [], travado = false, achados = 0;
+    cartas.forEach(([emoji, nome]) => {
+      const c = document.createElement("button");
+      c.className = "card"; c.setAttribute("aria-label", "Carta virada para baixo");
+      c.innerHTML = `<div class="inner"><div class="face back">❓</div><div class="face front">${IMG(emoji)}</div></div>`;
+      c.onclick = () => {
+        if (travado || c.classList.contains("up") || c.classList.contains("done")) return;
+        c.classList.add("up"); tone([520], .1); say(nome);
+        abertas.push({ c, emoji });
+        if (abertas.length < 2) return;
+        travado = true;
+        const [a, b] = abertas;
+        if (a.emoji === b.emoji) {
+          setTimeout(() => {
+            [a.c, b.c].forEach(x => { x.classList.remove("up"); x.classList.add("done"); });
+            tone([660, 880], .12); abertas = []; travado = false;
+            if (++achados === nivel.pares) setTimeout(onWin, 700);
+          }, 600);
+        } else {
+          setTimeout(() => {
+            [a.c, b.c].forEach(x => x.classList.remove("up"));
+            tone([300], .15, "triangle"); abertas = []; travado = false;
+          }, 1100);
+        }
+      };
+      board.appendChild(c);
+    });
+  }
+};
+
+
+/* ---------- Jogo da velha (gatos x cachorros) ---------- */
+const velha = {
+  icon: `<span class="im">${IMG("gato")}${IMG("cachorro")}</span>`,
+  niveis: [
+    { cls: "l1", icone: "🐣", modo: "facil", rotulo: "⭐" },
+    { cls: "l2", icone: "🦊", modo: "esperto", rotulo: "⭐⭐" },
+    { cls: "l3", icone: "👫", modo: "dois", rotulo: "" }
+  ],
+  start(root, nivel, onEnd) {
+    const P = [IMG("gato"), IMG("cachorro")];
+    const L = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    const b = Array(9).fill(null);
+    let turno = 0, fim = false;
+    const bot = nivel.modo !== "dois";
+    const vez = document.createElement("div"); vez.className = "turn"; vez.innerHTML = P[0];
+    const grade = document.createElement("div"); grade.className = "velha";
+    root.append(vez, grade);
+    const cel = b.map((_, i) => {
+      const c = document.createElement("button");
+      c.className = "cell"; c.setAttribute("aria-label", "Casa " + (i + 1));
+      c.onclick = () => jogada(i); grade.appendChild(c); return c;
+    });
+    const linha = t => L.find(([x, y, z]) => t[x] !== null && t[x] === t[y] && t[x] === t[z]);
+    const livres = () => b.map((v, i) => v === null ? i : -1).filter(i => i >= 0);
+    const acha = j => livres().find(i => { b[i] = j; const g = !!linha(b); b[i] = null; return g; });
+    function ia() {
+      if (nivel.modo === "esperto" || Math.random() < .3) {
+        let m = acha(1); if (m === undefined) m = acha(0);
+        if (m !== undefined) return m;
+        if (nivel.modo === "esperto" && b[4] === null) return 4;
+      }
+      const f = livres(); return f[Math.floor(Math.random() * f.length)];
+    }
+    function por(i) {
+      b[i] = turno; cel[i].innerHTML = P[turno]; cel[i].classList.add("full");
+      tone(turno ? [420] : [560], .1);
+    }
+    function terminou() {
+      const l = linha(b);
+      if (l) {
+        fim = true; l.forEach(i => cel[i].classList.add("hit"));
+        const perdeu = bot && turno === 1;
+        setTimeout(() => onEnd(perdeu ? "💪" : "🏆"), 1100); return true;
+      }
+      if (!livres().length) { fim = true; setTimeout(() => onEnd("🤝"), 900); return true; }
+      return false;
+    }
+    function jogada(i) {
+      if (fim || b[i] !== null || (bot && turno === 1)) return;
+      por(i); if (terminou()) return;
+      turno = 1; vez.innerHTML = P[1];
+      if (bot) {
+        setTimeout(() => {
+          if (fim) return;
+          por(ia()); if (terminou()) return;
+          turno = 0; vez.innerHTML = P[0];
+        }, 700);
+      }
+    }
+    // no modo de dois jogadores, o turno alterna entre 🐱 e 🐶
+    if (!bot) {
+      const orig = jogada;
+      cel.forEach((c, i) => c.onclick = () => {
+        if (fim || b[i] !== null) return;
+        por(i); if (terminou()) return;
+        turno = 1 - turno; vez.innerHTML = P[turno];
+      });
+    }
+  }
+};
+
+/* ---------- Pintura: leve o pincel até uma cor e pinte a folha ---------- */
+const pintura = {
+  icon: "🎨",
+  start(root) {
+    const CORES = ["#e63946","#ff9f1c","#ffd23f","#3dbb6d","#2d6cdf","#9b5de5","#ff8fb8","#8d5a2b"];
+    const TAM = [12, 28, 56];
+    let cor = CORES[0], tam = 1, borracha = false, down = false, ult = null, undo = null;
+
+    const box = document.createElement("div"); box.className = "pintura";
+    const pal = document.createElement("div"); pal.className = "paleta";
+    const cv = document.createElement("canvas"); cv.className = "folha"; cv.width = cv.height = 1000;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 1000, 1000);
+    ctx.lineCap = ctx.lineJoin = "round";
+    const brush = document.createElement("div"); brush.className = "brush";
+    brush.innerHTML = '<div class="dot"></div><div class="em">🖌️</div>';
+    const em = brush.querySelector(".em");
+
+    const sw = (html, label, extra = "") => {
+      const b = document.createElement("button");
+      b.className = "sw " + extra; b.setAttribute("aria-label", label); b.innerHTML = html;
+      pal.appendChild(b); return b;
+    };
+    const cBtns = CORES.map((c, i) => {
+      const b = sw("", "Cor", "cor"); b.style.setProperty("--c", c);
+      b.onclick = () => escolher(i); return b;
+    });
+    const bBtn = sw("🧽", "Borracha", "cor"); bBtn.onclick = () => escolher(-1);
+    const tBtns = TAM.map((t, i) => {
+      const b = sw(`<i style="width:${6 + i * 7}px;height:${6 + i * 7}px"></i>`, "Tamanho");
+      b.onclick = () => { tam = i; atualizar(); tone([440 + i * 80], .08); }; return b;
+    });
+    sw("↩️", "Desfazer").onclick = () => { if (undo) { ctx.putImageData(undo, 0, 0); undo = null; tone([380], .1); } };
+    sw("🗑️", "Limpar").onclick = () => {
+      undo = ctx.getImageData(0, 0, 1000, 1000);
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 1000, 1000); tone([300, 220], .1);
+    };
+    sw("💾", "Salvar").onclick = () => cv.toBlob(bl => {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(bl);
+      a.download = "meu-desenho.png"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
+
+    function escolher(i) {
+      borracha = i < 0; if (!borracha) cor = CORES[i];
+      atualizar(); tone([330 + (i + 1) * 50], .08);
+    }
+    function atualizar() {
+      const atual = borracha ? "#ffffff" : cor;
+      brush.style.setProperty("--c", atual); em.textContent = borracha ? "🧽" : "🖌️";
+      cBtns.forEach((b, i) => b.classList.toggle("on", !borracha && CORES[i] === cor));
+      bBtn.classList.toggle("on", borracha);
+      tBtns.forEach((b, i) => b.classList.toggle("on", i === tam));
+    }
+    const mover = (x, y) => brush.style.transform = `translate(${x}px,${y}px)`;
+    const dentro = (r, e) => e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+
+    function agir(e) {
+      mover(e.clientX, e.clientY);
+      if (!down) return;
+      const r = cv.getBoundingClientRect();
+      if (dentro(r, e)) {
+        const x = (e.clientX - r.left) * 1000 / r.width, y = (e.clientY - r.top) * 1000 / r.height;
+        ctx.strokeStyle = ctx.fillStyle = borracha ? "#ffffff" : cor;
+        ctx.lineWidth = TAM[tam];
+        if (!ult) {
+          undo = ctx.getImageData(0, 0, 1000, 1000);
+          ctx.beginPath(); ctx.arc(x, y, TAM[tam] / 2, 0, 7); ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.moveTo(ult[0], ult[1]); ctx.lineTo(x, y); ctx.stroke();
+        }
+        ult = [x, y];
+      } else {
+        ult = null;
+        // arrastar o pincel por cima de uma cor também escolhe essa cor
+        [...cBtns, bBtn].forEach((b, i) => {
+          if (dentro(b.getBoundingClientRect(), e)) {
+            const novo = i === CORES.length ? -1 : i;
+            if (novo === -1 ? !borracha : (borracha || cor !== CORES[novo])) escolher(novo);
+          }
+        });
+      }
+    }
+    root.addEventListener("pointerdown", e => {
+      down = true; ult = null;
+      if (e.target === cv) cv.setPointerCapture(e.pointerId);
+      agir(e);
+    });
+    root.addEventListener("pointermove", agir);
+    const solta = () => { down = false; ult = null; };
+    root.addEventListener("pointerup", solta);
+    root.addEventListener("pointercancel", solta);
+
+    box.append(pal, cv); root.append(box, brush);
+    atualizar();
+    requestAnimationFrame(() => {
+      const r = cBtns[0].getBoundingClientRect(); mover(r.left + r.width / 2, r.top + r.height / 2);
+    });
+  }
+};
+
+/* ---------- Escovar os dentes: escova nas superfícies, fio dental entre os dentes ---------- */
+const dentes = {
+  icon: "🦷",
+  niveis: [
+    { cls: "l1", icone: "🙂", n: 3, s: 1, g: 1, rotulo: "⭐" },
+    { cls: "l2", icone: "😀", n: 4, s: 2, g: 1, rotulo: "⭐⭐" },
+    { cls: "l3", icone: "🤩", n: 5, s: 2, g: 2, rotulo: "⭐⭐⭐" }
+  ],
+  start(root, nv, onEnd) {
+    const NS = "http://www.w3.org/2000/svg", W = 600, H = 340, OY = -44;
+    const CORES = ["#6b8e23", "#e07a1f", "#8b5a2b", "#c0392b"];
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const el = (tag, at, pai) => {
+      const e = document.createElementNS(NS, tag);
+      for (const k in at) e.setAttribute(k, at[k]);
+      if (pai) pai.appendChild(e); return e;
+    };
+    const btn = (emoji, label) => {
+      const b = document.createElement("button");
+      b.className = "round"; b.textContent = emoji; b.setAttribute("aria-label", label); return b;
+    };
+    const box = document.createElement("div"); box.className = "dentes";
+    const ferr = document.createElement("div"); ferr.className = "ferr";
+    const bBtn = btn("🪥", "Escova"), fBtn = btn("🧵", "Fio dental");
+    ferr.append(bBtn, fBtn);
+
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "boca" });
+    el("rect", { x: 0, y: 0, width: W, height: H, rx: 48, fill: "#8f1d2c" }, svg);
+    const n = nv.n, gap = 22, tw = (520 - (n - 1) * gap) / n, x0 = 40;
+    const den = [];
+    for (let i = 0; i < n; i++) {
+      const r = el("rect", { x: x0 + i * (tw + gap), y: 80, width: tw, height: 230, rx: tw * .32,
+        fill: "#efe2a6", stroke: "#d7d2c4", "stroke-width": 3 }, svg);
+      den.push({ r, tot: 0, ok: 0 });
+    }
+    el("rect", { x: 0, y: 0, width: W, height: 110, rx: 48, fill: "#ff6f8e" }, svg);
+
+    // restos de comida: "b" = na superfície (escova), "f" = entre os dentes (fio)
+    const comidas = [], falta = { b: 0, f: 0 };
+    function comida(x, y, tipo, ds, r) {
+      const g = el("g", { class: "food" }, svg), a = rnd(0, 180);
+      el("ellipse", { cx: x, cy: y, rx: r, ry: r * .72, fill: CORES[Math.floor(rnd(0, 4))],
+        transform: `rotate(${a} ${x} ${y})` }, g);
+      el("circle", { cx: x - r * .3, cy: y - r * .2, r: r * .25, fill: "rgba(255,255,255,.35)" }, g);
+      const hp = tipo === "b" ? 5 : 4;
+      comidas.push({ g, x, y, tipo, ds, hp, hp0: hp, r }); falta[tipo]++;
+      ds.forEach(d => den[d].tot++);
+    }
+    for (let i = 0; i < n; i++) {
+      const x = x0 + i * (tw + gap);
+      for (let k = 0; k < nv.s; k++)
+        comida(x + tw * rnd(.3, .7), 150 + (k + rnd(.2, .8)) * (130 / nv.s), "b", [i], 14);
+      if (i < n - 1) for (let k = 0; k < nv.g; k++)
+        comida(x + tw + gap / 2, 150 + (k + rnd(.2, .8)) * (130 / nv.g), "f", [i, i + 1], 11);
+    }
+    const total = comidas.length;
+
+    const prog = document.createElement("div"); prog.className = "prog";
+    prog.innerHTML = "<b><i></i></b><span>😬</span>";
+    const barra = prog.querySelector("i"), rosto = prog.querySelector("span");
+    const ponta = document.createElement("div"); ponta.className = "ponta"; ponta.textContent = "🪥";
+
+    let atual = "b", down = false, ultY = null, ultNo = 0, fim = false;
+    function escolher(t) {
+      atual = t; ponta.textContent = t === "b" ? "🪥" : "🧵";
+      bBtn.classList.toggle("on", t === "b"); fBtn.classList.toggle("on", t === "f");
+      (t === "b" ? bBtn : fBtn).classList.remove("dica"); tone([500], .08);
+    }
+    bBtn.onclick = () => escolher("b"); fBtn.onclick = () => escolher("f");
+    bBtn.classList.add("on");
+
+    const mover = (x, y) => ponta.style.transform = `translate(${x - 32}px,${y + OY - 32}px)`;
+    const faisca = (x, y, txt = "✨", cls = "spark") => {
+      const t = el("text", { x, y, "text-anchor": "middle", class: cls }, svg); t.textContent = txt;
+      setTimeout(() => t.remove(), 1500);
+    };
+    function limpar(c) {
+      c.hp--; c.g.style.opacity = .25 + .75 * c.hp / c.hp0;
+      if (c.hp > 0) return;
+      c.g.remove(); falta[c.tipo]--; faisca(c.x, c.y); tone([700, 900], .06);
+      c.ds.forEach(d => {
+        const o = ++den[d].ok, t = o / den[d].tot;
+        den[d].r.setAttribute("fill", `rgb(${239 + 16 * t | 0},${226 + 29 * t | 0},${166 + 89 * t | 0})`);
+      });
+      const feitos = 1 - (falta.b + falta.f) / total;
+      barra.style.width = feitos * 100 + "%";
+      rosto.textContent = feitos < .5 ? "😬" : feitos < 1 ? "🙂" : "😁";
+      if (!falta.b && !falta.f) return terminar();
+      if (!falta[atual]) (atual === "b" ? fBtn : bBtn).classList.add("dica");
+    }
+    function terminar() {
+      fim = true; tone([523, 659, 784, 1047], .12);
+      den.forEach(d => {
+        const x = +d.r.getAttribute("x") + tw / 2;
+        faisca(x, 200, "✨", "brilho"); faisca(x + 14, 250, "✨", "brilho");
+      });
+      setTimeout(() => onEnd("😁"), 1300);
+    }
+    function agir(e) {
+      mover(e.clientX, e.clientY);
+      if (!down || fim) return;
+      const py = e.clientY + OY, r = svg.getBoundingClientRect();
+      const sx = (e.clientX - r.left) * W / r.width, sy = (py - r.top) * H / r.height;
+      const dy = ultY === null ? 0 : Math.abs(py - ultY); ultY = py;
+      const raio = atual === "b" ? 42 : 30;
+      for (const c of comidas) {
+        if (c.hp <= 0 || Math.hypot(c.x - sx, c.y - sy) > raio + c.r * .5) continue;
+        if (c.tipo !== atual) {
+          if (Date.now() - ultNo > 400) {
+            ultNo = Date.now(); c.g.classList.add("no");
+            setTimeout(() => c.g.classList.remove("no"), 300); tone([200], .08, "triangle");
+          }
+        } else if (atual === "b" || dy >= 3) limpar(c); // o fio precisa subir e descer
+      }
+    }
+    root.addEventListener("pointerdown", e => { down = true; ultY = null; agir(e); });
+    root.addEventListener("pointermove", agir);
+    const solta = () => { down = false; ultY = null; };
+    root.addEventListener("pointerup", solta);
+    root.addEventListener("pointercancel", solta);
+
+    box.append(ferr, svg, prog); root.append(box, ponta);
+    requestAnimationFrame(() => {
+      const r = svg.getBoundingClientRect(); mover(r.left + r.width / 2, r.top + r.height / 2 - OY);
+    });
+  }
+};
+
+/* ---------- Plataforma: para adicionar jogos, basta incluir nesta lista ---------- */
+const JOGOS = [memoria, velha, pintura, dentes];
+
+const app = document.getElementById("app"), win = document.getElementById("win");
+let atual = null;
+
+function barra(voltar) {
+  return `<div class="bar">
+    ${voltar ? `<button class="round" id="home" aria-label="Início">🏠</button>` : `<span></span>`}
+    <button class="round ${soundOn ? "" : "off"}" id="snd" aria-label="Som">${soundOn ? "🔊" : "🔇"}</button>
+  </div>`;
+}
+function ligarBarra() {
+  const s = document.getElementById("snd");
+  s.onclick = () => {
+    soundOn = !soundOn; s.textContent = soundOn ? "🔊" : "🔇"; s.classList.toggle("off", !soundOn);
+    if (!soundOn && window.speechSynthesis) speechSynthesis.cancel(); else tone([660]);
+  };
+  const h = document.getElementById("home"); if (h) h.onclick = inicio;
+}
+
+function inicio() {
+  win.classList.remove("show");
+  const cores = ["#e63946", "#ff9f1c", "#3dbb6d", "#2d6cdf", "#9b5de5"];
+  const nome = [..."Maju's Games"].map((c, i) => c === " " ? " " : `<span style="color:${cores[i % 5]}">${c}</span>`).join("");
+  const autor = PORTFOLIO_URL
+    ? `<a href="${PORTFOLIO_URL}" target="_blank" rel="noopener noreferrer">Criado por Rubens Victor</a>`
+    : `<span class="autor">Criado por Rubens Victor</span>`;
+  app.innerHTML = barra(false) + `<main>
+    <h1 class="logo" style="margin:0"><span class="b">🎈</span> ${nome} <span class="b">🎈</span></h1>
+    <div class="tiles">${JOGOS.map((j, i) => `<button class="tile ${j.small ? "sm" : ""}" data-i="${i}" aria-label="Jogar">${j.icon}<small>▶️</small></button>`).join("")}</div>
+  </main>
+  <footer class="rodape">${autor}<button class="apoio" id="apoio">Me pague um café! ☕</button>
+    <small>Ilustrações: Twemoji (© Twitter/jdecked, CC BY 4.0)</small></footer>`;
+  ligarBarra();
+  document.getElementById("apoio").onclick = abrirModal;
+  app.querySelectorAll(".tile").forEach(t => t.onclick = () => { tone([523, 659]); const j = JOGOS[t.dataset.i]; j.niveis ? niveis(j) : jogar(j, {}); });
+}
+
+function niveis(jogo) {
+  atual = { jogo };
+  app.innerHTML = barra(true) + `<main><div class="levels">${jogo.niveis.map((n, i) =>
+    `<button class="level ${n.cls}" data-i="${i}" aria-label="Nível ${i + 1}"><span>${n.icone}</span>${n.rotulo ?? "⭐".repeat(i + 1)}</button>`).join("")}
+  </div></main>`;
+  ligarBarra();
+  app.querySelectorAll(".level").forEach(b => b.onclick = () => jogar(jogo, jogo.niveis[b.dataset.i]));
+}
+
+function jogar(jogo, nivel) {
+  atual = { jogo, nivel };
+  win.classList.remove("show");
+  app.innerHTML = barra(true) + `<main></main>`;
+  ligarBarra();
+  jogo.start(app.querySelector("main"), nivel, (sim = "🏆") => {
+    document.getElementById("trophy").textContent = sim;
+    const festa = sim === "🏆" || sim === "😁";
+    tone(festa ? [523, 659, 784, 1047] : [523, 659], .16);
+    if (festa) confetti();
+    win.classList.add("show");
+  });
+}
+
+
+/* ---------- Modal de contribuição (PIX) ---------- */
+const modal = document.getElementById("modal"), mOk = document.getElementById("m-ok"),
+      mBtn = document.getElementById("m-copiar"), mChave = document.getElementById("m-chave");
+let focoAnterior = null, timerOk = null;
+mChave.textContent = PIX_KEY;
+function abrirModal() {
+  focoAnterior = document.getElementById("apoio"); modal.hidden = false; // Safari não foca botões ao clicar
+  document.body.style.overflow = "hidden"; resetCopia();
+  document.getElementById("m-x").focus();
+}
+function fecharModal() {
+  modal.hidden = true; document.body.style.overflow = "";
+  if (focoAnterior && focoAnterior.focus) focoAnterior.focus();
+}
+function resetCopia() {
+  clearTimeout(timerOk); mBtn.textContent = "Copiar chave PIX"; mBtn.classList.remove("ok"); mOk.textContent = "";
+}
+async function copiarTexto(t) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(t); return true; } } catch (e) {}
+  const ta = document.createElement("textarea");
+  ta.value = t; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+  let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+  ta.remove(); return ok;
+}
+mBtn.onclick = async () => {
+  clearTimeout(timerOk);
+  if (await copiarTexto(PIX_KEY)) {
+    mBtn.textContent = "Chave copiada! ✅"; mBtn.classList.add("ok");
+    mOk.textContent = "Pronto! Agora é só colar no app do seu banco. Obrigado! 💛";
+    timerOk = setTimeout(resetCopia, 4000);
+  } else {
+    const r = document.createRange(); r.selectNodeContents(mChave);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    mOk.textContent = "Não deu para copiar sozinho: a chave está selecionada, é só copiar.";
+  }
+};
+document.getElementById("m-x").onclick = fecharModal;
+modal.addEventListener("click", e => { if (e.target === modal) fecharModal(); });
+document.addEventListener("keydown", e => {
+  if (modal.hidden) return;
+  if (e.key === "Escape") return fecharModal();
+  if (e.key === "Tab") { // mantém o foco dentro da modal
+    const f = [...modal.querySelectorAll("button")];
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+  }
+});
+
+document.getElementById("again").onclick = () => jogar(atual.jogo, atual.nivel);
+document.getElementById("toHome").onclick = inicio;
+inicio();
+</script>
+</body>
+</html>
